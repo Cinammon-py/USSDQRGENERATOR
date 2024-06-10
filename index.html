@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Code Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --motion-ease: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+        --motion-duration: 0.3s;
+      }
+      body {
+        font-family: 'Roboto', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f4f9;
+        overflow: hidden;
+      }
+      .container {
+        background: #f4f4f9;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(156, 156, 156, 0.1);
+        text-align: center;
+        max-width: 400px;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+      }
+      h1 {
+        margin-bottom: 20px;
+        color: #333;
+      }
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: bold;
+        color: #555;
+      }
+      input[type='text'] {
+        width: 95%;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+      input[type='text']::placeholder {
+        color: #999; /* Placeholder color */
+      }
+      button {
+        appearance: none;
+        background: transparent;
+        border: 2px solid #4b4a4a1a; /* Added border */
+        border-radius: 12px; /* Added border radius */
+        cursor: pointer;
+        font: inherit;
+        font-weight: 500;
+        line-height: 1;
+        padding: 1em 1.5em;
+        position: relative;
+        transition: filter var(--motion-duration);
+      }
+      button:hover {
+        filter: brightness(1.1);
+      }
+      button:active {
+        filter: brightness(0.9);
+      }
+      button > span {
+        display: block;
+        position: relative;
+        transition: transform var(--motion-duration) var(--motion-ease);
+        z-index: 1;
+      }
+      button:hover > span {
+        transform: scale(1.05);
+      }
+      button:active > span {
+        transform: scale(0.95);
+      }
+      button > svg {
+        fill: #9593931a;
+        position: absolute;
+        top: -5%;
+        left: -5%;
+        width: 110%;
+        height: 110%;
+      }
+      button > svg > path {
+        transition: var(--motion-duration) var(--motion-ease);
+      }
+      button:hover > svg > path {
+        d: path('M0,0 C0,-5 100,-5 100,0 C105,0 105,100 100,100 C100,105 0,105 0,100 C-5,100 -5,0 0,0');
+      }
+      button:active > svg > path {
+        d: path('M0,0 C30,10 70,10 100,0 C95,30 95,70 100,100 C70,90 30,90 0,100 C5,70 5,30 0,0');
+      }
+      .qr-container {
+        margin-top: 20px;
+        display: none;
+      }
+      .qr-container img {
+        width: 200px;
+        height: 200px;
+      }
+      .background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .background svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        fill: rgba(0, 0, 0, 0.05);
+        stroke: rgba(0, 0, 0, 0.05);
+      }
+      .square {
+        animation: fadeInOut 5s infinite;
+        transition: transform 8s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+      }
+      @keyframes fadeInOut {
+        0%,
+        100% {
+          opacity: 2;
+        }
+        50% {
+          opacity: 4.5;
+        }
+      }
+    </style>
+    <script>
+      function generateQR(event) {
+        event.preventDefault();
+        const phoneNumber = document.getElementById('phone_number').value;
+        fetch('/generate_qr', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ phone_number: phoneNumber }),
+        })
+          .then((response) => response.blob())
+          .then((blob) => {
+            const qrContainer = document.querySelector('.qr-container');
+            const qrImage = document.querySelector('.qr-container img');
+            const objectURL = URL.createObjectURL(blob);
+            qrImage.src = objectURL;
+            qrContainer.style.display = 'block';
+          })
+          .catch((error) => console.error('Error:', error));
+      }
+
+      function createGridPattern(numSquares = 50) {
+        const background = document.querySelector('.background');
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+
+        const width = 40;
+        const height = 40;
+
+        for (let i = 0; i < numSquares; i++) {
+          const rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('width', width - 1);
+          rect.setAttribute('height', height - 1);
+          rect.setAttribute('class', 'square');
+          updateSquarePosition(rect, width, height);
+          svg.appendChild(rect);
+        }
+
+        background.appendChild(svg);
+      }
+
+      function updateSquarePosition(rect, width, height) {
+        const x = Math.floor(Math.random() * (window.innerWidth / width)) * width;
+        const y = Math.floor(Math.random() * (window.innerHeight / height)) * height;
+        rect.style.transform = `translate(${x}px, ${y}px)`;
+        setTimeout(() => updateSquarePosition(rect, width, height), 5500); // Adjusted to 4.5 seconds
+      }
+
+      window.onload = function () {
+        createGridPattern();
+      };
+    </script>
+  </head>
+  <body>
+    <div class="background"></div>
+    <div class="container">
+      <h1>QR Code Generator</h1>
+      <form onsubmit="generateQR(event)">
+        <label for="phone_number">Enter USSD Code:</label>
+        <input type="text" id="phone_number" name="phone_number" placeholder="*182*1*....#" required />
+        <button type="submit">
+          <span>Generate QR</span>
+          <svg viewBox="-5 -5 110 110" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,0 C0,0 100,0 100,0 C100,0 100,100 100,100 C100,100 0,100 0,100 C0,100 0,0 0,0" />
+          </svg>
+        </button>
+      </form>
+      <div class="qr-container">
+        <h2>Scan me!</h2>
+        <img src="" alt="QR Code" />
+      </div>
+    </div>
+  </body>
+</html>
